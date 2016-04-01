@@ -3,6 +3,7 @@ package com.artbeatte.imagemanip;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.awt.image.WritableRaster;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -41,14 +42,12 @@ public class ImageManip {
     }
 
     private class Pixel {
-        public int x, y, red, green, blue;
+        public int x, y, rgb;
 
-        public Pixel(int x, int y, int red, int green, int blue) {
+        public Pixel(int x, int y, int rgb) {
             this.x = x;
             this.y = y;
-            this.red = red;
-            this.green = green;
-            this.blue = blue;
+            this.rgb = rgb;
         }
 
         @Override
@@ -57,9 +56,7 @@ public class ImageManip {
                 Pixel o = (Pixel) obj;
                 return this.x == o.x &&
                         this.y == o.y &&
-                        this.red == o.red &&
-                        this.green == o.green &&
-                        this.blue == o.blue;
+                        this.rgb == o.rgb;
             }
             return false;
         }
@@ -68,33 +65,24 @@ public class ImageManip {
     private class PixelGroup {
         public Set<Pixel> pixels;
         public List<Pixel> boundaryPixels;
-        public int averageRed, averageGreen, averageBlue;
+        public int averageRGB;
 
         public PixelGroup() {
             this.pixels = new HashSet<>();
             this.boundaryPixels = new ArrayList<>();
-            this.averageRed = 0;
-            this.averageGreen = 0;
-            this.averageBlue = 0;
+            this.averageRGB = 0;
         }
 
         public void addPixel(Pixel p) {
             int numPixels = pixels.size();
-            this.averageRed = (averageRed * numPixels + p.red) / (numPixels + 1);
-            this.averageGreen = (averageGreen * numPixels + p.green) / (numPixels + 1);
-            this.averageBlue = (averageBlue * numPixels + p.blue) / (numPixels + 1);
+            this.averageRGB = (averageRGB * numPixels + p.rgb) / (numPixels + 1);
             pixels.add(p);
             updateBoundaryPixels(p);
         }
 
         public boolean isPart(Pixel p) {
-            int redDif = this.averageRed - p.red;
-            int greenDif = this.averageGreen - p.green;
-            int blueDif = this.averageBlue - p.blue;
-            return redDif <= this.averageRed * GROUP_VARIANCE &&
-                    greenDif <= this.averageGreen * GROUP_VARIANCE &&
-                    blueDif <= this.averageBlue * GROUP_VARIANCE &&
-                    isContiguous(p);
+            int redDif = this.averageRGB - p.rgb;
+            return redDif <= this.averageRGB * GROUP_VARIANCE && isContiguous(p);
         }
 
         private void updateBoundaryPixels(Pixel p) {
@@ -109,12 +97,10 @@ public class ImageManip {
                     itr.remove();
                 }
             }
-//            if (!isEnclosed(p)) {
-//            }
         }
 
         private boolean isEnclosed(Pixel p) {
-            Pixel testPixel = new Pixel(p.x - 1, p.y - 1, 0, 0, 0);
+            Pixel testPixel = new Pixel(p.x - 1, p.y - 1, 0);
             boolean n0 = Collections.binarySearch(boundaryPixels, testPixel, PIXEL_COMPARATOR) >= 0;
             testPixel.x +=1;
             boolean n1 = Collections.binarySearch(boundaryPixels, testPixel, PIXEL_COMPARATOR) >= 0;
@@ -137,7 +123,7 @@ public class ImageManip {
         }
 
         private boolean isContiguous(Pixel p) {
-            Pixel testPixel = new Pixel(p.x - 1, p.y - 1, 0, 0, 0);
+            Pixel testPixel = new Pixel(p.x - 1, p.y - 1, 0);
             boolean n0 = Collections.binarySearch(boundaryPixels, testPixel, PIXEL_COMPARATOR) >= 0;
             testPixel.x +=1;
             boolean n1 = Collections.binarySearch(boundaryPixels, testPixel, PIXEL_COMPARATOR) >= 0;
@@ -173,18 +159,12 @@ public class ImageManip {
     private void findImageObjects(boolean showProgress) {
         Set<PixelGroup> pixelGroups = new HashSet<>();
 
-        WritableRaster raster = mImage.getRaster();
-        int[] pixels = raster.getPixels(0, 0, raster.getWidth(), raster.getHeight(),
-                new int[raster.getWidth() * raster.getHeight() * RGB_PIXEL_OFFSET]);
-        for (int i = 0; i < raster.getHeight() * RGB_PIXEL_OFFSET; i++) {
+        for (int i = 0; i < mImage.getWidth(); i++) {
             if (showProgress) {
-                showProgress(i, raster.getHeight() * RGB_PIXEL_OFFSET);
+                showProgress(i, mImage.getWidth());
             }
-            for (int j = 0; j < raster.getWidth(); j += RGB_PIXEL_OFFSET) {
-                Pixel p = new Pixel(i, j,
-                        pixels[raster.getWidth() * i + j],
-                        pixels[raster.getWidth() * i + j + 1],
-                        pixels[raster.getWidth() * i + j + 2]);
+            for (int j = 0; j < mImage.getHeight(); j++) {
+                Pixel p = new Pixel(i, j, mImage.getRGB(i, j));
                 boolean added = false;
                 for (PixelGroup pg : pixelGroups) {
                     if (pg.isPart(p)) {
@@ -203,12 +183,9 @@ public class ImageManip {
 
         for (PixelGroup pg : pixelGroups) {
             for (Pixel p : pg.pixels) {
-                pixels[raster.getWidth() * p.x + p.y] = pg.averageRed;
-                pixels[raster.getWidth() * p.x + p.y + 1] = pg.averageGreen;
-                pixels[raster.getWidth() * p.x + p.y + 2] = pg.averageBlue;
+                mImage.setRGB(p.x, p.y, pg.averageRGB);
             }
         }
-        raster.setPixels(0, 0, raster.getWidth(), raster.getHeight(), pixels);
     }
 
     private void showProgress(int position, int total) {
@@ -225,6 +202,7 @@ public class ImageManip {
     }
 
     private void blueShiftImage() {
+//        DataBuffer db = mImage.getData().getDataBuffer(); db.
         WritableRaster raster = mImage.getRaster();
         int[] pixels = raster.getPixels(0, 0, raster.getWidth(), raster.getHeight(),
                 new int[raster.getWidth() * raster.getHeight() * RGB_PIXEL_OFFSET]);
