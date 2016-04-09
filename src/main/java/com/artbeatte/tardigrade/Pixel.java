@@ -1,4 +1,4 @@
-package com.artbeatte.imagemanip;
+package com.artbeatte.tardigrade;
 
 /**
  * @author art.beatte

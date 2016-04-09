@@ -1,4 +1,4 @@
-package com.artbeatte.imagemanip;
+package com.artbeatte.tardigrade;
 
 import java.util.Collections;
 import java.util.HashSet;

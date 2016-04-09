@@ -1,4 +1,4 @@
-package com.artbeatte.imagemanip;
+package com.artbeatte.tardigrade;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -14,7 +14,7 @@ import java.util.*;
  * @author art.beatte
  * @version 3/31/16
  */
-public class ImageManip {
+public class Tardigrade {
 
     private static final String WORKING_FILE = Paths.get("").toAbsolutePath()
             .resolve("src/main/res/tardigrade.png").toString();
@@ -29,10 +29,10 @@ public class ImageManip {
         if (args.length < 1) {
             args = new String[] { WORKING_FILE };
         }
-        new ImageManip(args[0]);
+        new Tardigrade(args[0]);
     }
 
-    public ImageManip(String imageFilePath) {
+    public Tardigrade(String imageFilePath) {
         mImage = getImage(imageFilePath);
 
         if (mImage != null) {
