@@ -21,7 +21,7 @@ public class Tardigrade {
     private static final String PROCESSED_FILE = Paths.get("").toAbsolutePath()
             .resolve("processed.png").toString();
 
-    private static final double GROUP_VARIANCE = 0.5;
+    private static final double GROUP_VARIANCE = 0.1;
 
     private BufferedImage mImage;
 

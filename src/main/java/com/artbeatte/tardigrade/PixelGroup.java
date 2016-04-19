@@ -2,6 +2,7 @@ package com.artbeatte.tardigrade;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -12,11 +13,14 @@ public class PixelGroup {
     private double groupVariance;
     private Set<Pixel> pixels;
     private int[] averagePixelData;
+    private int[] mockPixelData;
+    private boolean mocked = false;
 
     public PixelGroup(double groupVariance, int numDataElements) {
         this.groupVariance = groupVariance;
         this.pixels = new HashSet<>();
         this.averagePixelData = new int[numDataElements];
+        this.mockPixelData = new int[numDataElements];
     }
 
     public void addPixel(Pixel p) {
@@ -41,7 +45,14 @@ public class PixelGroup {
     }
 
     public int[] getColorAverage() {
-        return averagePixelData;
+        if (!mocked) {
+            Random random = new Random();
+            this.mockPixelData[0] = random.nextInt(256);
+            this.mockPixelData[1] = random.nextInt(256);
+            this.mockPixelData[2] = random.nextInt(256);
+            mocked = true;
+        }
+        return mockPixelData;
     }
 
     @Override
